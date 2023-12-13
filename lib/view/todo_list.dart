@@ -1,132 +1,58 @@
-import 'package:doingly/services/todo_service.dart';
-import 'package:doingly/widgets/snackbar_helper.dart';
+import 'package:doingly/controller/todo_provider.dart';
 import 'package:doingly/view/add_page.dart';
-import 'package:doingly/widgets/todo_card.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class TodoListPage extends StatefulWidget {
+
+class TodoListPage extends StatelessWidget {
   const TodoListPage({super.key});
-
-  @override
-  State<TodoListPage> createState() => _TodoListPageState();
-}
-
-class _TodoListPageState extends State<TodoListPage> {
-  bool isLoading = true;
-  List items = [];
-
-  @override
-  void initState() {
-    super.initState();
-    fetchTodo();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-     
-        title: const Center(
-          child: Text(
-            "Doingly",
-          ),
-        ),
+        title: const Text('Todo List'),
       ),
-      body: Visibility(
-        visible: isLoading,
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
-        replacement: RefreshIndicator(
-          onRefresh: fetchTodo,
-          child: Visibility(
-            visible: items.isNotEmpty,
-            replacement: Center(
-              child: Text(
-                'No Todo Item',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-            ),
-            child: ListView.builder(
-              itemCount: items.length,
-              padding: EdgeInsets.all(8),
-              itemBuilder: (context, index) {
-                final item = items[index] as Map;
-                final id = item['_id'] as String; 
-                return TodoCard(
-                    index: index,
-                    item: item,
-                    navigateEdit: navigateToeditPage,
-                    deleteById: deleteById);
-              },
-            ),
-          ),
-        ),
+      body: Consumer<TodoProvider>(
+        builder:(context,value,child){
+          return    ListView.builder(
+          itemCount: value.items.length,
+          itemBuilder: (context,index){
+            final todoModel=value.items[index];
+            return ListTile(
+              leading: Text('${index+1}'),
+              title: Text(todoModel.title!),
+              subtitle: Text(todoModel.description!),
+              trailing: PopupMenuButton(
+                onSelected: (value){
+                  if(value=='edit'){
+                    //open edit page
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context)=>AddPage(todoModel:todoModel)));
+                  }else if(value=='delete'){
+                    //delete and remove the item
+                    Provider.of<TodoProvider>(context,listen: false).deleteById(todoModel.id!);
+                  }
+                },
+                itemBuilder:(context){
+                  return [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child:Text('Edit'),),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child:Text('delete'),)
+                  ];
+                }),
+            );
+          });
+        } ,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: navigateToAddPage,
-        label: Text('add Todo'),
-      ),
+        onPressed:(){
+          Navigator.of(context).push(MaterialPageRoute(builder:(context)=>const AddPage() ));
+        },
+        label: const Text('ADD TODO'),
+        ),
     );
-  }
-
-  Future<void> navigateToeditPage(Map item) async {
-    final route = MaterialPageRoute(builder: (context) => AddPage(todo: item));
-    await Navigator.push(context, route);
-    setState(() {
-      isLoading = true;
-    });
-    fetchTodo();
-  }
-
-
-
-
-
-
-  Future<void> navigateToAddPage() async {
-    final route = MaterialPageRoute(builder: (context) => AddPage());
-    await Navigator.push(context, route);
-    setState(() {
-      isLoading = true;
-    });
-    fetchTodo();
-  }
-
-
-
-
-// ...
-
-  Future<void> deleteById(String id) async {
-    final isSuccess = await TodoService.deleteById(id);
-    if (isSuccess) {
-      setState(() {
-        items = items.where((element) => element['_id'] != id).toList();
-      });
-    } else {
-      showErorrMessage(context, message: ' Deletion Failed');
-    }
-  }
-
-
-
-
-
-
-  Future<void> fetchTodo() async {
-    final response = await TodoService.fetchTodo();
-
-    if (response != null) {
-      setState(() {
-        items = response;
-      });
-    } else {
-      showErorrMessage(context, message: ' Something went wrong');
-    }
-
-    setState(() {
-      isLoading = false;
-    });
   }
 }

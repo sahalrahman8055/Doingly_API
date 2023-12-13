@@ -1,13 +1,12 @@
 import 'package:doingly/controller/todo_provider.dart';
-import 'package:doingly/services/todo_service.dart';
-import 'package:doingly/widgets/snackbar_helper.dart';
+import 'package:doingly/helper/helper.dart';
 import 'package:doingly/view/todo_list.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class AddPage extends StatefulWidget {
-  final Map? todo;
-  const AddPage({super.key, this.todo});
+  final todoModel;
+  const AddPage({super.key, this.todoModel});
 
   @override
   State<AddPage> createState() => _AddPageState();
@@ -16,98 +15,62 @@ class AddPage extends StatefulWidget {
 class _AddPageState extends State<AddPage> {
   @override
   void initState() {
-     final todoprovider = Provider.of<TodoProvider>(context, listen: false);
+    // TODO: implement initState
     super.initState();
-    final todo = widget.todo;
+    final todo=widget.todoModel;
+    final todoProvider = Provider.of<TodoProvider>(context, listen: false);
     if (todo != null) {
-      todoprovider.isEdit = true;
-      final title = todo["title"];
-      final description = todo["description"]; // Remove the square brackets
-      todoprovider.titleController.text = title;
-      todoprovider.descriptionController.text = description;
+      todoProvider.isEditValueChange(true);
+      final title=todo.title;
+      final descriptio=todo.description;
+      todoProvider.titleController.text=title;
+      todoProvider.descriptionController.text=descriptio;
+    } else {
+      todoProvider.isEditValueChange(false);
+      todoProvider.titleController.text='';
+      todoProvider.descriptionController.text='';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final todoprovider = Provider.of<TodoProvider>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
-        title: Center(child: Text(todoprovider.isEdit ? 'Edit Todo' : 'Add Page')),
+        title: Text(Provider.of<TodoProvider>(context).isEdit
+            ? 'Edit Todo'
+            : 'ADD TODO'),
       ),
       body: ListView(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         children: [
           TextField(
-            controller: todoprovider.titleController,
-            decoration: InputDecoration(hintText: "Title"),
+            controller: Provider.of<TodoProvider>(context, listen: false)
+                .titleController,
+            decoration: const InputDecoration(hintText: 'title'),
           ),
           TextField(
-            controller: todoprovider.descriptionController,
-            decoration: InputDecoration(hintText: "Description"),
+            controller: Provider.of<TodoProvider>(context, listen: false)
+                .descriptionController,
+            decoration: const InputDecoration(
+              hintText: 'Description',
+            ),
             keyboardType: TextInputType.multiline,
             minLines: 5,
             maxLines: 8,
           ),
-          SizedBox(
-            height: 20,
-          ),
+          khight20,
           ElevatedButton(
-              onPressed: todoprovider.isEdit ? updateData : submitData,
-              child: Text(todoprovider.isEdit ? "Update" : "submit")),
+            onPressed: () {
+             final todoProvider= Provider.of<TodoProvider>(context, listen: false);
+             todoProvider.isEdit? todoProvider.updateData(widget.todoModel):todoProvider.addData();
+             Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>TodoListPage()));            },
+            child: Text(
+              Provider.of<TodoProvider>(context).isEdit? 'Update'
+            : 'Submit',
+            ),
+          )
         ],
       ),
     );
-  }
-
-  Future<void> updateData() async {
-    final todo = widget.todo;
-
-    if (todo == null) {
-      print('You can not call update without todo data');
-      return;
-    }
-    final id = todo['_id'];
-
-    final isSuccess = await TodoService.updateTodo(id, body);
-
-    if (isSuccess) {
-      showSuccessMessage(context, message: 'Update Success');
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => TodoListPage()),
-      );
-    } else {
-      showErorrMessage(context, message: "Update  Failed");
-    }
-  }
-
-  Future<void> submitData() async {
-      final todoprovider = Provider.of<TodoProvider>(context, listen: false);
-    final isSuccess = await TodoService.addTodo(body);
-
-    if (isSuccess) {
-     todoprovider.titleController.text = "";
-     todoprovider.descriptionController.text = "";
-      showSuccessMessage(context, message: 'Creation Success');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => TodoListPage()),
-      );
-    } else {
-      showErorrMessage(context, message: "Creation Failed");
-    }
-  }
-
-  Map get body {
-      final todoprovider = Provider.of<TodoProvider>(context, listen: false);
-    final title = todoprovider.titleController.text;
-    final description =todoprovider.descriptionController.text;
-    return {
-      "title": title,
-      "description": description,
-      "is_completed": false,
-    };
   }
 }

@@ -5,7 +5,7 @@ class TodoModel {
   bool? iscompleted;
 
   TodoModel({
-     this.id,
+    this.id,
     required this.title,
     required this.description,
     required this.iscompleted,
@@ -19,13 +19,11 @@ class TodoModel {
         iscompleted: json['is_completed']);
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'title': title,
       'description': description,
       'is_completed': iscompleted,
     };
   }
-
-
 }
